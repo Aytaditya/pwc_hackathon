@@ -1,0 +1,198 @@
+[
+  {
+    "id": "cybersecure-genai",
+    "name": "CyberSecure GenAI",
+    "summary": "A secure GenAI agent layer that prevents malicious prompt injections, SQL injections, and unsafe agent actions by validating user intent before execution.",
+    "pain_points": [
+      "prompt injection attacks",
+      "SQL injection via LLM agents",
+      "LLM-based tool misuse"
+    ],
+    "capabilities": [
+      "AI firewall",
+      "agent execution guardrails",
+      "intent validation",
+      "payload inspection"
+    ],
+    "industries": [
+      "Cybersecurity",
+      "AI Infrastructure",
+      "Enterprise SaaS"
+    ],
+    "regulations": [
+      "OWASP Top 10",
+      "SOC 2 Compliance"
+    ],
+    "url": "https://cyber-securegenai.azurewebsites.net/"
+  },
+  {
+    "id": "eddison-motor",
+    "name": "Eddison Motor AI Assistant",
+    "summary": "A smart sales chatbot that understands customer needs and recommends the right products while remembering preferences and interactions over time.",
+    "pain_points": [
+      "inefficient product discovery",
+      "low customer retention",
+      "generic recommendations"
+    ],
+    "capabilities": [
+      "conversational AI",
+      "product recommendation",
+      "preference memory",
+      "customer intent understanding"
+    ],
+    "industries": [
+      "E-commerce",
+      "Retail",
+      "Automotive"
+    ],
+    "regulations": ["Not Applicable"],
+    "url": "http://automotive-ai-studio.azurewebsites.net/"
+  },
+  {
+    "id": "talk-to-data",
+    "name": "Talk to Data",
+    "summary": "An AI platform that lets users upload multiple CSV files and chat with the data. A Python-based engine profiles each column\u2014even if headers are missing\u2014infers types, detects relationships, and stores the structure. At query time, it uses cross-CSV logic and deterministic Python rules to return accurate answers.",
+    "pain_points": [
+      "slow data analysis",
+      "non-technical users unable to query data",
+      "messy or unlabeled columns",
+      "multiple dataset confusion"
+    ],
+    "capabilities": [
+      "auto column profiling & typing",
+      "schema inference for unlabeled data",
+      "multi-file CSV reasoning",
+      "Python-driven deterministic querying",
+      "cross-dataframe QA"
+    ],
+    "industries": [
+      "Finance",
+      "Operations",
+      "Audit",
+      "Data Analytics"
+    ],
+    "regulations": [
+      "Data Quality Standards"
+    ],
+    "url": "https://app.irame.ai/"
+  },
+  {
+    "id": "axis-ai-sales-caller",
+    "name": "AXIS - AI Sales Call Orchestrator",
+    "summary": "A tool that lets you define a sales workflow, which is then used by a voice AI assistant (via Twilio) to call clients, follow your flow, and transcribe conversations for further analysis.",
+    "pain_points": [
+      "manual sales outreach",
+      "lack of call analytics",
+      "inconsistent customer experience"
+    ],
+    "capabilities": [
+      "AI voice calling",
+      "workflow-based conversation",
+      "call transcription",
+      "post-call analytics"
+    ],
+    "industries": [
+      "Sales",
+      "Call Centers",
+      "Customer Success"
+    ],
+    "regulations": [
+      "Telemarketing Compliance",
+      "Data Privacy in Voice AI"
+    ],
+    "url": "https://axis-assitant.web.app/"
+  },
+  {
+    "id": "hr-ai-studio",
+    "name": "HR AI Studio",
+    "summary": "HR AI Studio is an innovative platform designed to revolutionize Human Resources management using advanced artificial intelligence. Enhance your HR efficiency, candidate engagement, and streamline hiring processes effortlessly.",
+    "pain_points": [
+      "manual resume screening",
+      "hiring bias",
+      "low candidate engagement",
+      "inefficient job description creation",
+      "misaligned job-candidate matching"
+    ],
+    "capabilities": [
+      "resume parsing",
+      "job description generation",
+      "AI-powered interviews",
+      "candidate-job matching",
+      "automated candidate evaluation"
+    ],
+    "industries": [
+      "Human Resources",
+      "Recruitment",
+      "HR Tech"
+    ],
+    "regulations": [
+      "EEOC compliance",
+      "Diversity and Inclusion Standards"
+    ],
+    "url": "https://hr-ai-studio.azurewebsites.net/"
+  },
+  {
+    "id": "contracts-ai-studio",
+    "name": "Contracts AI Studio",
+    "summary": "Contracts AI Studio is a Generative AI-powered web app designed to simplify and modernize contract management. It supports contract summarization, comparison, redaction, generation, clause extraction, and intelligent querying across a contract repository.",
+    "pain_points": [
+      "manual contract review",
+      "version control issues",
+      "data redaction risk",
+      "slow contract drafting",
+      "non-standard clause detection",
+      "difficulty querying past contracts"
+    ],
+    "capabilities": [
+      "contract summarization",
+      "AI-based contract comparison",
+      "PII and sensitive data redaction",
+      "contract generation with templates",
+      "clause redlining and benchmarking",
+      "tag and clause extraction",
+      "semantic contract search"
+    ],
+    "industries": [
+      "Legal",
+      "Compliance",
+      "Procurement",
+      "Enterprise Operations"
+    ],
+    "regulations": [
+      "GDPR",
+      "HIPAA",
+      "Contract Lifecycle Management Standards"
+    ],
+    "url":"https://contracts-ai-studio-g2gag2gkcka0fegb.canadacentral-01.azurewebsites.net/"
+  },
+  {
+    "id": "digital-twin-assistant",
+    "name": "Digital Twin Assistant",
+    "summary": "A Digital Twin system for smart manufacturing plants that allows users to simulate, monitor, and understand telemetry data using GPT-4-powered natural language interface and predictive ML models.",
+    "pain_points": [
+      "manual telemetry analysis",
+      "lack of intuitive access to IoT data",
+      "difficulty predicting anomalies",
+      "non-technical users can't interpret raw sensor data"
+    ],
+    "capabilities": [
+      "natural language querying of industrial data",
+      "sensor anomaly detection",
+      "real-time Excel telemetry processing",
+      "ML-based power/vibration forecasting",
+      "simulation of factory behavior",
+      "dashboard + chat interface for analysis"
+    ],
+    "industries": [
+      "Manufacturing",
+      "Industrial Automation",
+      "IoT",
+      "Smart Factories"
+    ],
+    "regulations": [
+      "ISO 50001 \u2013 Energy Management",
+      "Industrial IoT Safety Standards"
+    ],
+    "url":"Not Deployed"
+  }
+]
