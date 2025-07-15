@@ -23,7 +23,7 @@
       "OWASP Top 10",
       "SOC 2 Compliance"
     ],
-    "url": "https://cyber-securegenai.azurewebsites.net/"
+    "url": ""
   },
   {
     "id": "eddison-motor",
@@ -46,7 +46,7 @@
       "Automotive"
     ],
     "regulations": ["Not Applicable"],
-    "url": "http://automotive-ai-studio.azurewebsites.net/"
+    "url": ""
   },
   {
     "id": "talk-to-data",
@@ -74,7 +74,7 @@
     "regulations": [
       "Data Quality Standards"
     ],
-    "url": "https://app.irame.ai/"
+    "url": ""
   },
   {
     "id": "axis-ai-sales-caller",
@@ -100,7 +100,7 @@
       "Telemarketing Compliance",
       "Data Privacy in Voice AI"
     ],
-    "url": "https://axis-assitant.web.app/"
+    "url": ""
   },
   {
     "id": "hr-ai-studio",
@@ -129,7 +129,7 @@
       "EEOC compliance",
       "Diversity and Inclusion Standards"
     ],
-    "url": "https://hr-ai-studio.azurewebsites.net/"
+    "url": ""
   },
   {
     "id": "contracts-ai-studio",
@@ -163,7 +163,7 @@
       "HIPAA",
       "Contract Lifecycle Management Standards"
     ],
-    "url":"https://contracts-ai-studio-g2gag2gkcka0fegb.canadacentral-01.azurewebsites.net/"
+    "url":""
   },
   {
     "id": "digital-twin-assistant",

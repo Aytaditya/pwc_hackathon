@@ -15,6 +15,8 @@ An intelligent GenAI assistant that acts as a **PwC Technology Consultant**—aw
 
 ![graph](./readme_images/image1.png)
 
+![landing page](./readme_images/image4.png)
+
 ---
 
 ## 🧩 Key Modules
@@ -27,6 +29,8 @@ An intelligent GenAI assistant that acts as a **PwC Technology Consultant**—aw
 | **Consultant Dashboard**     | Timeline of meeting + asset-fit suggestions.                                                   | Next.js + ReactFlow for graph view, Shadcn UI for clean interaction         |
 | **Analytics**                | Post-call stats: sentiment, asset interest score, follow-up signals.                          | OpenAI NLP + Supabase for logs + Recharts for visualization                 |
 
+![landing](./readme_images/image6.png)
+
 ---
 
 ## 🚀 Features (Planned)
@@ -38,12 +42,13 @@ An intelligent GenAI assistant that acts as a **PwC Technology Consultant**—aw
 
 ![graph](./readme_images/image2.png)
 
+![image](./readme_images/image7.png)
+
 ---
 
 ## 📂 Project Structure
 
 ```
-
 backend/
 ├── graph.py               # Ingests JSON and creates graph
 ├── qa\_agent.py            # Natural language QA on the graph
@@ -52,6 +57,10 @@ backend/
 ├── requirements.txt
 
 ````
+
+![image](./readme_images/image8.png)
+
+![image](./readme_images/image9.png)
 
 ---
 
@@ -91,19 +100,21 @@ NEO4J_PASSWORD=test1234
 python graph.py
 ```
 
-### Run QA Demo
+### Run Backend
 
 ```bash
-python qa_agent.py
+python main.py
 ```
+
+![image](./readme_images/image10.png)
 
 ---
 
 ## System Architecture
 
-```mermaid
+```bash
 graph TD
-    A[Assets JSON / Confluence] -->|LLM Extraction| B(Graph Ingestion Script)
+    A[Assets JSON / Confluence] -->|LLM Extraction| B(Graph Ingestion Script)]
     B --> C{Neo4j Knowledge Graph}
 
     subgraph Meeting Flow
@@ -127,6 +138,8 @@ graph TD
 * Tag Asset Interest Level Automatically
 
 ![graph](./readme_images/image3.png)
+
+![image](./readme_images/image11.png)
 
 ---
 
