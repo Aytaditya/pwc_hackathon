@@ -11,8 +11,6 @@ import {
   Lightbulb,
   Bot,
   Brain,
-  FlaskConical,
-  Puzzle,
   Atom,
 } from "lucide-react"
 
@@ -64,6 +62,7 @@ export default function Chatbot({ clientName }) {
 
       const data = await response.json()
       setCompanyAnalysis(data)
+      console.log(data)
 
       let newBotMessages = []
       if (isInitial) {
