@@ -1,18 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import {
-  Send,
-  Info,
-  HelpCircle,
-  Settings,
-  Code,
-  Search,
-  Lightbulb,
-  Bot,
-  Brain,
-  Atom,
-} from "lucide-react"
+import { Send, Info, HelpCircle, Settings, Code, Search, Lightbulb, Bot, Brain, Atom } from 'lucide-react'
 
 export default function Chatbot({ clientName }) {
   // Main chat states
@@ -23,6 +12,8 @@ export default function Chatbot({ clientName }) {
   const [companyAnalysis, setCompanyAnalysis] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [selectedProjects, setSelectedProjects] = useState([]) // Stores selected project objects
+  const [quickSuggestions, setQuickSuggestions] = useState([])
   const messagesEndRef = useRef(null)
 
   // AI Lab chat states
@@ -37,6 +28,75 @@ export default function Chatbot({ clientName }) {
   useEffect(() => {
     scrollToBottom()
   }, [messages, aiLabMessages])
+
+  // Function to handle project interest response
+  const handleProjectInterestResponse = (data) => {
+    const botMessage = {
+      type: "project_interest_response",
+      data: data,
+      sender: "bot",
+      avatar: <Bot className="w-5 h-5 text-white" />,
+    }
+    setMessages((prevMessages) => [...prevMessages, botMessage])
+  }
+
+  const handleProjectSelect = async (projectId) => {
+    const project = quickSuggestions.find((p) => p.id === projectId)
+    if (project) {
+      setSelectedProjects((prev) => [...prev, project])
+      setQuickSuggestions((prev) => prev.filter((p) => p.id !== projectId))
+
+      const userMessage = {
+        text: `You've selected the project: ${project.name}`,
+        sender: "user",
+        avatar: (
+          <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+            PD
+          </div>
+        ),
+      }
+      setMessages((prev) => [...prev, userMessage])
+
+      setIsLoading(true)
+      setError(null)
+      try {
+        const payload = {
+          company_name: clientName,
+          project_id: project.id,
+          user_interest: project.name, // Initial interest is the project name
+          current_systems: "", // Placeholder as not provided
+        }
+        const response = await fetch("http://localhost:8000/project-interest", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to get project interest: ${response.status}`)
+        }
+
+        const data = await response.json()
+        handleProjectInterestResponse(data)
+      } catch (err) {
+        console.error("Error fetching project interest:", err)
+        setError(err.message)
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            text: `I couldn't process your interest in ${project.name}. Error: ${err.message}`,
+            sender: "bot",
+            isError: true,
+            avatar: <Bot className="w-5 h-5 text-white" />,
+          },
+        ])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }
 
   // Main chat functions
   const fetchAndProcessAnalysis = async (companyName, painPoints = [], additionalContext = null, isInitial = false) => {
@@ -62,7 +122,17 @@ export default function Chatbot({ clientName }) {
 
       const data = await response.json()
       setCompanyAnalysis(data)
-      console.log(data)
+
+      // Extract project suggestions for quick selection
+      if (data.recommended_projects) {
+        const suggestions = data.recommended_projects.map((project) => ({
+          id: project.project_id,
+          name: project.project_name,
+          summary: project.summary,
+          url: project.url,
+        }))
+        setQuickSuggestions(suggestions)
+      }
 
       let newBotMessages = []
       if (isInitial) {
@@ -156,6 +226,9 @@ export default function Chatbot({ clientName }) {
   }
 
   useEffect(() => {
+    // This effect runs once on initial load if clientName is present.
+    // messages.length === 0 ensures it doesn't re-fetch on every message.
+    // clientName is the only dependency that should trigger a re-fetch of initial analysis. [^1]
     if (clientName && messages.length === 0) {
       fetchAndProcessAnalysis(clientName, ["marketing", "sales", "operations"], null, true)
     }
@@ -176,42 +249,69 @@ export default function Chatbot({ clientName }) {
     setMessages((prevMessages) => [...prevMessages, userMessage])
     setInputMessage("")
 
-    if (companyAnalysis) {
-      const currentPainPoints = companyAnalysis.identified_pain_points || companyAnalysis.suggested_pain_points || []
-      await fetchAndProcessAnalysis(clientName, currentPainPoints, userMessage.text, false)
+    let targetProjectId = null
+    let targetProjectName = null
+
+    if (selectedProjects.length > 0) {
+      const lastSelected = selectedProjects[selectedProjects.length - 1]
+      targetProjectId = lastSelected.id
+      targetProjectName = lastSelected.name
+    } else if (companyAnalysis?.recommended_projects?.length > 0) {
+      // Fallback to the first recommended project if none are explicitly selected
+      const firstRecommended = companyAnalysis.recommended_projects[0]
+      targetProjectId = firstRecommended.project_id
+      targetProjectName = firstRecommended.project_name
     } else {
-      try {
-        const response = await fetch("http://localhost:8000/ask", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ question: userMessage.text }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
-        const botMessage = {
-          text: data.answer,
+      // If no project is selected or recommended, we cannot hit /project-interest
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          text: "Please select a project from the 'Projects' tab or wait for initial analysis to complete before asking project-specific questions.",
           sender: "bot",
+          isError: true,
           avatar: <Bot className="w-5 h-5 text-white" />,
-        }
-        setMessages((prevMessages) => [...prevMessages, botMessage])
-      } catch (error) {
-        console.error("Error sending message:", error)
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            text: "Sorry, I couldn't get a response. Please try again.",
-            sender: "bot",
-            isError: true,
-            avatar: <Bot className="w-5 h-5 text-white" />,
-          },
-        ])
+        },
+      ])
+      return // Exit if no project context
+    }
+
+    setIsLoading(true)
+    setError(null)
+    try {
+      const payload = {
+        company_name: clientName,
+        project_id: targetProjectId,
+        user_interest: userMessage.text, // User's typed message is the interest
+        current_systems: "", // Placeholder
       }
+      const response = await fetch("http://localhost:8000/project-interest", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to get project interest: ${response.status}`)
+      }
+
+      const data = await response.json()
+      handleProjectInterestResponse(data)
+    } catch (err) {
+      console.error("Error sending message (project interest):", err)
+      setError(err.message)
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          text: `Sorry, I couldn't process your request about ${targetProjectName}. Error: ${err.message}`,
+          sender: "bot",
+          isError: true,
+          avatar: <Bot className="w-5 h-5 text-white" />,
+        },
+      ])
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -228,7 +328,6 @@ export default function Chatbot({ clientName }) {
         </div>
       ),
     }
-
     setAiLabMessages((prev) => [...prev, userMessage])
     setAiLabInput("")
     setAiLabLoading(true)
@@ -346,6 +445,120 @@ export default function Chatbot({ clientName }) {
           {!identified?.length && !suggested?.length && <p>No specific pain points identified yet.</p>}
         </div>
       )
+    } else if (message.type === "project_interest_response") {
+      const { project, integration_suggestions, next_steps, pilot_suggestions } = message.data
+      return (
+        <div className="bg-[#2A2A2A] p-4 rounded-lg space-y-4 text-gray-300 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white flex items-center">
+            <Lightbulb className="w-5 h-5 mr-2 text-purple-400" /> Project Interest Details: {project.project_name}
+          </h3>
+
+          {/* Project Details */}
+          <div className="space-y-2">
+            <h4 className="font-medium text-gray-300">Project Overview:</h4>
+            <p className="text-sm text-gray-400">{project.summary}</p>
+            {project.explanation && <p className="text-xs text-gray-500">Explanation: {project.explanation}</p>}
+            {project.match_score && <p className="text-xs text-gray-500">Relevance: {project.match_score}/100</p>}
+            {project.addresses_pain_points && project.addresses_pain_points.length > 0 && (
+              <div>
+                <p className="text-xs text-gray-500">Addresses Pain Points:</p>
+                <ul className="list-disc list-inside text-xs text-gray-500 ml-2">
+                  {project.addresses_pain_points.map((point, i) => (
+                    <li key={i}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {project.deployment_status && (
+              <p className="text-xs text-gray-500">Deployment Status: {project.deployment_status}</p>
+            )}
+            {project.url && (
+              <a
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-purple-400 hover:underline block mt-1"
+              >
+                View Project Details
+              </a>
+            )}
+          </div>
+
+          {/* Integration Suggestions */}
+          {integration_suggestions && (
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-300">Integration Suggestions:</h4>
+              {integration_suggestions.implementation_approach && (
+                <p className="text-sm text-gray-400">
+                  Implementation Approach: {integration_suggestions.implementation_approach}
+                </p>
+              )}
+              {integration_suggestions.technical_requirements &&
+                integration_suggestions.technical_requirements.length > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-400">Technical Requirements:</p>
+                    <ul className="list-disc list-inside text-sm text-gray-400 ml-2">
+                      {integration_suggestions.technical_requirements.map((req, i) => (
+                        <li key={i}>{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              {integration_suggestions.timeline && (
+                <div>
+                  <p className="text-sm text-gray-400">Timeline:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-400 ml-2">
+                    {Object.entries(integration_suggestions.timeline).map(([phase, description]) => (
+                      <li key={phase}>
+                        <strong>{phase}:</strong> {description}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {integration_suggestions.expected_benefits && integration_suggestions.expected_benefits.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-400">Expected Benefits:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-400 ml-2">
+                    {integration_suggestions.expected_benefits.map((benefit, i) => (
+                      <li key={i}>{benefit}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {integration_suggestions.potential_challenges &&
+                integration_suggestions.potential_challenges.length > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-400">Potential Challenges:</p>
+                    <ul className="list-disc list-inside text-sm text-gray-400 ml-2">
+                      {integration_suggestions.potential_challenges.map((challenge, i) => (
+                        <li key={i}>{challenge}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+            </div>
+          )}
+
+          {/* Next Steps & Pilot Suggestions */}
+          {(next_steps?.length > 0 || pilot_suggestions) && (
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-300">Next Actions:</h4>
+              {next_steps && next_steps.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-400">Recommended Next Steps:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-400 ml-2">
+                    {next_steps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {pilot_suggestions && <p className="text-sm text-gray-400">Pilot Suggestions: {pilot_suggestions}</p>}
+            </div>
+          )}
+        </div>
+      )
     }
     return message.text
   }
@@ -396,10 +609,37 @@ export default function Chatbot({ clientName }) {
     ),
     projects: (
       <div className="space-y-6">
+        {/* Selected Projects */}
+        {selectedProjects.length > 0 && (
+          <div className="bg-[#3A3A3A] p-4 rounded-lg shadow-md border border-gray-700">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+              <Lightbulb className="w-4 h-4 mr-2 text-green-400" /> Selected Projects
+            </h3>
+            <div className="space-y-3">
+              {selectedProjects.map((project) => (
+                <div key={project.id} className="bg-[#2A2A2A] p-3 rounded-lg border border-gray-600">
+                  <h4 className="font-medium text-purple-400">{project.name}</h4>
+                  <p className="text-sm text-gray-400">{project.summary}</p>
+                  {project.url && (
+                    <a
+                      href={project.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-purple-400 hover:underline"
+                    >
+                      View Project Details
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Recommended Projects */}
         {companyAnalysis && companyAnalysis.recommended_projects?.length > 0 ? (
           <div className="bg-[#3A3A3A] p-4 rounded-lg shadow-md border border-gray-700">
             <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-              <Lightbulb className="w-4 h-4 mr-2 text-green-400" /> Recommended Projects for {clientName}
+              <Lightbulb className="w-4 h-4 mr-2 text-yellow-400" /> Recommended Projects for {clientName}
             </h3>
             <div className="space-y-3">
               {companyAnalysis.recommended_projects.map((project) => (
@@ -419,6 +659,12 @@ export default function Chatbot({ clientName }) {
                       Details
                     </a>
                   )}
+                  <button
+                    onClick={() => handleProjectSelect(project.project_id)}
+                    className="mt-2 text-xs bg-purple-900 hover:bg-purple-800 text-white px-2 py-1 rounded"
+                  >
+                    Select Project
+                  </button>
                 </div>
               ))}
             </div>
@@ -506,10 +752,16 @@ export default function Chatbot({ clientName }) {
             </pre>
             {aiLabMessages[aiLabMessages.length - 1]?.confidence && (
               <div className="mt-2 text-xs text-gray-400">
-                Confidence: <span className={
-                  aiLabMessages[aiLabMessages.length - 1].confidence === 'High' ? 'text-green-400' :
-                    aiLabMessages[aiLabMessages.length - 1].confidence === 'Medium' ? 'text-yellow-400' : 'text-red-400'
-                }>
+                Confidence:{" "}
+                <span
+                  className={
+                    aiLabMessages[aiLabMessages.length - 1].confidence === "High"
+                      ? "text-green-400"
+                      : aiLabMessages[aiLabMessages.length - 1].confidence === "Medium"
+                        ? "text-yellow-400"
+                        : "text-red-400"
+                  }
+                >
                   {aiLabMessages[aiLabMessages.length - 1].confidence}
                 </span>
               </div>
@@ -517,7 +769,7 @@ export default function Chatbot({ clientName }) {
           </div>
         )}
       </div>
-    )
+    ),
   }
 
   // AI Lab Content with Chat
@@ -528,11 +780,8 @@ export default function Chatbot({ clientName }) {
         <h2 className="text-2xl font-bold text-white flex items-center">
           <Atom className="w-6 h-6 mr-3 text-blue-400" /> Gen AI Lab Chat
         </h2>
-        <p className="text-sm text-gray-400 mt-1">
-          Ask questions about our AI models, tools, and capabilities
-        </p>
+        <p className="text-sm text-gray-400 mt-1">Ask questions about our AI models, tools, and capabilities</p>
       </div>
-
       {/* AI Lab Chat Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Loading state */}
@@ -541,7 +790,6 @@ export default function Chatbot({ clientName }) {
             <div className="animate-pulse text-gray-400">Thinking...</div>
           </div>
         )}
-
         {/* Messages */}
         {aiLabMessages.map((msg, index) => (
           <div
@@ -554,12 +802,13 @@ export default function Chatbot({ clientName }) {
               </div>
             )}
             <div
-              className={`p-3 rounded-lg shadow-md ${msg.sender === "user"
-                ? "bg-blue-600 text-white max-w-[70%]"
-                : msg.isError
-                  ? "bg-red-900 text-white max-w-[80%]"
-                  : "bg-[#2A2A2A] text-gray-300 max-w-full w-full border border-gray-700"
-                }`}
+              className={`p-3 rounded-lg shadow-md ${
+                msg.sender === "user"
+                  ? "bg-blue-600 text-white max-w-[70%]"
+                  : msg.isError
+                    ? "bg-red-900 text-white max-w-[80%]"
+                    : "bg-[#2A2A2A] text-gray-300 max-w-full w-full border border-gray-700"
+              }`}
             >
               {msg.text}
               {/* Add Cypher query display if available */}
@@ -574,7 +823,18 @@ export default function Chatbot({ clientName }) {
               {/* Add confidence level if available */}
               {msg.confidence && (
                 <div className="mt-2 text-xs text-gray-400">
-                  Confidence: <span className={msg.confidence === 'High' ? 'text-green-400' : msg.confidence === 'Medium' ? 'text-yellow-400' : 'text-red-400'}>{msg.confidence}</span>
+                  Confidence:{" "}
+                  <span
+                    className={
+                      msg.confidence === "High"
+                        ? "text-green-400"
+                        : msg.confidence === "Medium"
+                          ? "text-yellow-400"
+                          : "text-red-400"
+                    }
+                  >
+                    {msg.confidence}
+                  </span>
                 </div>
               )}
             </div>
@@ -587,7 +847,6 @@ export default function Chatbot({ clientName }) {
         ))}
         <div ref={messagesEndRef} />
       </div>
-
       {/* AI Lab Input Area */}
       <div className="sticky bottom-0 w-full p-4 bg-[#1A1A1A] border-t border-gray-800">
         <div className="relative max-w-3xl mx-auto">
@@ -630,7 +889,6 @@ export default function Chatbot({ clientName }) {
         <div className="absolute bottom-1/2 right-1/3 w-28 h-28 rounded-full border-2 border-orange-400 opacity-10 animate-pulse-slow"></div>
         <div className="absolute top-1/4 right-1/4 w-24 h-24 rounded-full border-2 border-gray-500 opacity-10 animate-pulse-fast"></div>
         <div className="absolute bottom-1/4 right-1/2 w-36 h-36 rounded-full border-2 border-red-500 opacity-10 animate-pulse"></div>
-
         {/* Main Content Header */}
         <div className="flex items-center p-4 bg-[#1A1A1A] border-b border-gray-800 z-10">
           <div className="flex items-center bg-[#6B46C1] rounded-full px-3 py-1 text-sm font-medium text-white">
@@ -641,30 +899,30 @@ export default function Chatbot({ clientName }) {
           <div className="ml-4 text-sm text-gray-400">
             Analyzing: <span className="text-purple-400">{clientName}</span>
           </div>
-
           {/* Header Tabs */}
           <div className="flex ml-auto space-x-2">
             <button
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${mainView === "analysis"
-                ? "bg-purple-700 text-white"
-                : "bg-[#2A2A2A] text-gray-400 hover:bg-gray-700 hover:text-white"
-                }`}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                mainView === "analysis"
+                  ? "bg-purple-700 text-white"
+                  : "bg-[#2A2A2A] text-gray-400 hover:bg-gray-700 hover:text-white"
+              }`}
               onClick={() => setMainView("analysis")}
             >
               Company Painpoint Analysis
             </button>
             <button
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${mainView === "aiLab"
-                ? "bg-purple-700 text-white"
-                : "bg-[#2A2A2A] text-gray-400 hover:bg-gray-700 hover:text-white"
-                }`}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                mainView === "aiLab"
+                  ? "bg-purple-700 text-white"
+                  : "bg-[#2A2A2A] text-gray-400 hover:bg-gray-700 hover:text-white"
+              }`}
               onClick={() => setMainView("aiLab")}
             >
               Gen AI Lab Assets
             </button>
           </div>
         </div>
-
         {/* Conditional Main Content */}
         {mainView === "analysis" ? (
           <>
@@ -699,12 +957,13 @@ export default function Chatbot({ clientName }) {
                     </div>
                   )}
                   <div
-                    className={`p-3 rounded-lg shadow-md ${msg.sender === "user"
-                      ? "bg-[#6B46C1] text-white max-w-[70%]"
-                      : msg.isError
-                        ? "bg-red-900 text-white max-w-[80%]"
-                        : "bg-[#2A2A2A] text-gray-300 max-w-full w-full border border-gray-700"
-                      }`}
+                    className={`p-3 rounded-lg shadow-md ${
+                      msg.sender === "user"
+                        ? "bg-[#6B46C1] text-white max-w-[70%]"
+                        : msg.isError
+                          ? "bg-red-900 text-white max-w-[80%]"
+                          : "bg-[#2A2A2A] text-gray-300 max-w-full w-full border border-gray-700"
+                    }`}
                   >
                     {renderMessageContent(msg)}
                   </div>
@@ -717,9 +976,24 @@ export default function Chatbot({ clientName }) {
               ))}
               <div ref={messagesEndRef} />
             </div>
-
             {/* Chat Input Area */}
             <div className="sticky bottom-0 w-full p-4 bg-[#1A1A1A] border-t border-gray-800 z-20">
+              {/* Quick suggestions */}
+              {quickSuggestions.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {quickSuggestions.map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => handleProjectSelect(project.id)}
+                      className="text-xs bg-purple-900 hover:bg-purple-800 text-white px-3 py-1 rounded-full flex items-center"
+                      title={project.summary}
+                    >
+                      {project.name}
+                      <Send className="w-3 h-3 ml-1" />
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="relative max-w-3xl mx-auto">
                 <textarea
                   placeholder="Enter a prompt, or press '/' for multiple prompts..."
@@ -754,7 +1028,6 @@ export default function Chatbot({ clientName }) {
           aiLabContent
         )}
       </div>
-
       {/* Right Section: Workspace Sidebar */}
       <div className="w-96 flex-shrink-0 bg-[#2A2A2A] border-l border-gray-800 flex flex-col">
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
@@ -765,48 +1038,49 @@ export default function Chatbot({ clientName }) {
             &times;
           </button>
         </div>
-
         {/* Tabs */}
         <div className="flex border-b border-gray-800">
           <button
-            className={`flex-1 py-3 text-center font-semibold transition-colors ${activeTab === "planner"
-              ? "text-purple-400 border-b-2 border-purple-400"
-              : "text-gray-400 hover:text-white"
-              }`}
+            className={`flex-1 py-3 text-center font-semibold transition-colors ${
+              activeTab === "planner"
+                ? "text-purple-400 border-b-2 border-purple-400"
+                : "text-gray-400 hover:text-white"
+            }`}
             onClick={() => setActiveTab("planner")}
           >
             Planner
           </button>
           <button
-            className={`flex-1 py-3 text-center font-semibold transition-colors ${activeTab === "projects"
-              ? "text-purple-400 border-b-2 border-purple-400"
-              : "text-gray-400 hover:text-white"
-              }`}
+            className={`flex-1 py-3 text-center font-semibold transition-colors ${
+              activeTab === "projects"
+                ? "text-purple-400 border-b-2 border-purple-400"
+                : "text-gray-400 hover:text-white"
+            }`}
             onClick={() => setActiveTab("projects")}
           >
             Projects
           </button>
           <button
-            className={`flex-1 py-3 text-center font-semibold transition-colors ${activeTab === "reference"
-              ? "text-purple-400 border-b-2 border-purple-400"
-              : "text-gray-400 hover:text-white"
-              }`}
+            className={`flex-1 py-3 text-center font-semibold transition-colors ${
+              activeTab === "reference"
+                ? "text-purple-400 border-b-2 border-purple-400"
+                : "text-gray-400 hover:text-white"
+            }`}
             onClick={() => setActiveTab("reference")}
           >
             Reference
           </button>
           <button
-            className={`flex-1 py-3 text-center font-semibold transition-colors ${activeTab === "coder" ? "text-purple-400 border-b-2 border-purple-400" : "text-gray-400 hover:text-white"
-              }`}
+            className={`flex-1 py-3 text-center font-semibold transition-colors ${
+              activeTab === "coder" ? "text-purple-400 border-b-2 border-purple-400" : "text-gray-400 hover:text-white"
+            }`}
             onClick={() => setActiveTab("coder")}
           >
             Coder
           </button>
         </div>
-
         {/* Dynamic Content based on activeTab */}
         <div className="flex-1 overflow-y-auto p-6">{tabContent[activeTab]}</div>
-
         {/* Help Button */}
         <div className="p-4 border-t border-gray-800 flex justify-end">
           <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full flex items-center shadow-lg">
